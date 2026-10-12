@@ -1,13 +1,17 @@
-export type CatalogItem = {id:string;category:'Labor'|'Supplies'|'Expenditures';description:string;unitCostCents:number};
-export type LineItem = {id:string;catalogItemId?:string;category:'Labor'|'Supplies'|'Expenditures';description:string;quantity:number;unitCostCents:number};
+import {ensureNoInterruptedRestore} from './security/backup';
+import type {RecoveryMetadata} from './security/records';
+import {validateCore} from './security/validation';
+export type Receipt = {id:string;name:string;dataUrl:string};
+export type CatalogItem = RecoveryMetadata & {id:string;category:'Labor'|'Supplies'|'Expenditures';description:string;unitCostCents:number;baseCostCents?:number;markupPercent?:number;markupCents?:number;details?:string;materialUrl?:string;skuCode?:string;includeTaxes?:boolean;receipts?:Receipt[]};
+export type LineItem = RecoveryMetadata & {id:string;catalogItemId?:string;category:'Labor'|'Supplies'|'Expenditures';description:string;details?:string;materialUrl?:string;skuCode?:string;includeTaxes?:boolean;receipts?:Receipt[];quantity:number;unitCostCents:number};
 export type Status = 'Open' | 'In progress' | 'Completed';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
-export type Customer = {id:string;name:string;contact:string;email:string;phone:string;streetAddress?:string;addressLine2?:string;city?:string;state?:string;postalCode?:string;country?:string};
-export type Property = {id:string;name:string;address:string;city?:string;state?:string;postalCode?:string;customerId:string;type:string};
-export type Technician = {id:string;name:string;specialty:string;email:string;phone:string};
-export type WorkOrder = {id:string;title:string;type?:string;lineItems?:LineItem[];description:string;propertyId:string;technicianId:string;status:Status;priority:Priority;scheduled:string;created:string};
+export type Customer = RecoveryMetadata & {id:string;name:string;contact:string;email:string;phone:string;streetAddress?:string;addressLine2?:string;city?:string;state?:string;postalCode?:string;country?:string};
+export type Property = RecoveryMetadata & {id:string;name:string;address:string;city?:string;state?:string;postalCode?:string;customerId:string;type:string};
+export type Technician = RecoveryMetadata & {id:string;name:string;specialty:string;email:string;phone:string};
+export type WorkOrder = RecoveryMetadata & {id:string;title:string;type?:string;lineItems?:LineItem[];description:string;propertyId:string;technicianId:string;status:Status;priority:Priority;scheduled:string;created:string};
 export type Activity = {id:string;text:string;at:string;orderId?:string};
-export type Data = {version:1;catalog?:CatalogItem[];customers:Customer[];properties:Property[];technicians:Technician[];orders:WorkOrder[];activity:Activity[];settings:{company:string;name:string;email:string}};
+export type Data = {version:1;storageRevision?:number;storageEpoch?:string;catalog?:CatalogItem[];customers:Customer[];properties:Property[];technicians:Technician[];orders:WorkOrder[];activity:Activity[];settings:{company:string;name:string;email:string}};
 export const localDate = (date=new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 export function seed():Data {
  const day=(offset:number)=>{const d=new Date();d.setDate(d.getDate()+offset);return localDate(d)};
@@ -36,8 +40,6 @@ export function seed():Data {
  activity:[{id:'a1',text:'Emily Rodriguez completed lobby fixture service',at:now,orderId:'WO-1044'},{id:'a2',text:'Rooftop HVAC filter replacement moved to In progress',at:new Date(Date.now()-3600000).toISOString(),orderId:'WO-1048'},{id:'a3',text:'Restroom leak assigned to Daniel Kim',at:new Date(Date.now()-7200000).toISOString(),orderId:'WO-1046'}]};
 }
 export const storageKey='orvex-v0.1';
-export function readData():{data:Data;error:string} {
- try { const raw=localStorage.getItem(storageKey); if(!raw)return {data:seed(),error:''};const d=JSON.parse(raw);
- if(d.version!==1||!['customers','properties','technicians','orders','activity'].every(k=>Array.isArray(d[k]))||!d.settings || d.orders.some((o:WorkOrder)=>!o.id||!o.title||!['Open','In progress','Completed'].includes(o.status)||!['Low','Medium','High','Urgent'].includes(o.priority)))throw Error('Invalid data');
- return {data:d,error:''}; } catch {return {data:seed(),error:'Saved data could not be loaded. Sample data is shown; existing storage will not be overwritten until you save a change.'};}
+export function readData():{data:Data;error:string;raw:string|null;failed:boolean} {
+ let raw:string|null=null;try{raw=localStorage.getItem(storageKey);ensureNoInterruptedRestore();if(raw===null)return {data:seed(),error:'',raw,failed:false};const value=JSON.parse(raw);validateCore(value);return {data:value,error:'',raw,failed:false};}catch{return {data:seed(),error:'Saved data could not be loaded. Sample data is shown read-only. Saving is blocked; original storage is preserved. Use Settings → Backup & Recovery.',raw,failed:true};}
 }

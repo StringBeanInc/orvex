@@ -1,0 +1,9 @@
+import {localDate,type Data} from '../data';
+import {type DocumentStore,type DocumentType,type BusinessDocument} from './model';
+export function makeDraft(store:DocumentStore,data:Data,type:DocumentType,customerId:string,orderId='',preview=false):BusinessDocument {
+ const config=store.types[type];const order=data.orders.find(o=>o.id===orderId);const property=data.properties.find(p=>p.id===order?.propertyId);const customer=data.customers.find(c=>c.id===(property?.customerId||customerId));if(!customer)throw new Error('Select an existing customer.');
+ const template=store.templates.find(t=>t.id===config.templateId&&t.type===type&&!t.deletedAt)||store.templates.find(t=>t.type===type&&!t.deletedAt);if(!template)throw new Error('Choose a template for this document type.');
+ let n=config.nextNumber;let number=`${config.prefix}${String(n).padStart(4,'0')}`;while(store.documents.some(d=>d.number===number)){n++;number=`${config.prefix}${String(n).padStart(4,'0')}`;}
+ const due=new Date();due.setDate(due.getDate()+config.days);const now=new Date().toISOString();
+ return {id:crypto.randomUUID(),number:preview?'PREVIEW':number,type,title:config.title,status:'Draft',templateId:template.id,template:structuredClone(template),company:structuredClone(store.profile),customer:structuredClone(customer),property:property?structuredClone(property):undefined,workOrderId:order?.id||'',workOrderTitle:order?.title||'',scope:type==='Change Order'?'':order?.description||'',items:structuredClone(type==='Change Order'?[]:order?.lineItems||[]),issueDate:localDate(),relevantDate:localDate(due),notes:config.notes,terms:config.terms,taxEnabled:store.defaults.taxEnabled,taxRate:store.defaults.taxRate,taxLabel:store.defaults.taxLabel,amountPaidCents:0,changeReason:'',originalContractCents:0,priorChangesCents:0,createdAt:now,updatedAt:now};
+}
