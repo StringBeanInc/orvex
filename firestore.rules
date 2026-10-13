@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function verified(){return request.auth != null && request.auth.token.email_verified == true;}
+  function member(cid){return verified() && get(/databases/$(database)/documents/organizations/$(cid)/members/$(request.auth.uid)).data.active == true;}
+  function bootstrap(cid){return exists(/databases/$(database)/documents/platformConfig/publicSignup) && get(/databases/$(database)/documents/platformConfig/publicSignup).data.enabled == true && verified() && !exists(/databases/$(database)/documents/organizations/$(cid)) && !exists(/databases/$(database)/documents/users/$(request.auth.uid)) && !exists(/databases/$(database)/documents/organizations/$(cid)/members/$(request.auth.uid)) && !exists(/databases/$(database)/documents/organizations/$(cid)/employees/$(request.auth.uid)) && getAfter(/databases/$(database)/documents/organizations/$(cid)).data.ownerUid == request.auth.uid && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == cid && getAfter(/databases/$(database)/documents/organizations/$(cid)/members/$(request.auth.uid)).data.role == 'Owner' && getAfter(/databases/$(database)/documents/organizations/$(cid)/employees/$(request.auth.uid)).data.role == 'Owner';}
+  match /platformConfig/publicSignup { allow get: if true; }
+  match /users/{uid} {
+   allow get: if verified() && request.auth.uid == uid;
+   allow create: if request.auth.uid == uid && request.resource.data.keys().hasOnly(['companyId','createdAt']) && request.resource.data.createdAt == request.time && bootstrap(request.resource.data.companyId);
+  }
+  match /organizations/{cid} {
+   function owner(){return member(cid) && get(/databases/$(database)/documents/organizations/$(cid)/members/$(request.auth.uid)).data.role == 'Owner';}
+   function text(v,limit){return v is string && v.size() <= limit;}
+   function required(v,limit){return text(v,limit) && v.size()>0 && v.matches('.*[^ ].*');}
+   function meta(d,id){return d.id == id && d.companyId == cid && d.schemaVersion == 1 && d.revision is int && d.revision>0 && d.updatedAt == request.time && d.updatedBy == request.auth.uid && ((d.deletedAt == null && d.deletedBy == null && d.recoverUntil == null) || (d.deletedAt == request.time && d.deletedBy == request.auth.uid && d.recoverUntil is timestamp && d.recoverUntil >= request.time + duration.value(29,'d') && d.recoverUntil <= request.time + duration.value(31,'d')));}
+   function fresh(d){return d.createdAt == request.time && d.createdBy == request.auth.uid && d.revision == 1 && d.deletedAt == null;}
+   function changed(d){return d.createdAt == resource.data.createdAt && d.createdBy == resource.data.createdBy && d.revision == resource.data.revision+1 && resource.data.deletedAt == null;}
+   function customerShape(d,id){return d.keys().hasOnly(['id','companyId','schemaVersion','revision','createdAt','createdBy','updatedAt','updatedBy','deletedAt','deletedBy','recoverUntil','name','contact','email','phone','streetAddress','addressLine2','city','state','postalCode','country','propertyCount','relationshipMutationId']) && meta(d,id) && required(d.name,160) && required(d.contact,160) && required(d.phone,80) && text(d.email,254) && d.email.matches('^[^ @]+@[^ @]+[.][^ @]+$') && text(d.streetAddress,300) && text(d.addressLine2,160) && text(d.city,120) && text(d.state,120) && text(d.postalCode,30) && text(d.country,120) && d.propertyCount is int && d.propertyCount>=0 && text(d.relationshipMutationId,128);}
+   function propertyShape(d,id){return d.keys().hasOnly(['id','companyId','schemaVersion','revision','createdAt','createdBy','updatedAt','updatedBy','deletedAt','deletedBy','recoverUntil','name','address','city','state','postalCode','type','customerId']) && meta(d,id) && required(d.name,160) && required(d.address,300) && text(d.city,120) && text(d.state,120) && text(d.postalCode,30) && d.type in ['Office','Residential','Healthcare','Commercial','Industrial'] && required(d.customerId,128);}
+   function wasLinked(pid,customer){return exists(/databases/$(database)/documents/organizations/$(cid)/properties/$(pid)) && get(/databases/$(database)/documents/organizations/$(cid)/properties/$(pid)).data.deletedAt == null && get(/databases/$(database)/documents/organizations/$(cid)/properties/$(pid)).data.customerId == customer;}
+   function nowLinked(pid,customer){return getAfter(/databases/$(database)/documents/organizations/$(cid)/properties/$(pid)).data.deletedAt == null && getAfter(/databases/$(database)/documents/organizations/$(cid)/properties/$(pid)).data.customerId == customer;}
+   function countChange(d,id){return (d.propertyCount == resource.data.propertyCount && d.relationshipMutationId == resource.data.relationshipMutationId) || (d.deletedAt == null && d.diff(resource.data).affectedKeys().hasOnly(['propertyCount','relationshipMutationId','revision','updatedAt','updatedBy']) && ((!wasLinked(d.relationshipMutationId,id) && nowLinked(d.relationshipMutationId,id) && d.propertyCount == resource.data.propertyCount+1) || (wasLinked(d.relationshipMutationId,id) && !nowLinked(d.relationshipMutationId,id) && d.propertyCount == resource.data.propertyCount-1)));}
+   function activeCustomer(customer){return getAfter(/databases/$(database)/documents/organizations/$(cid)/customers/$(customer)).data.deletedAt == null && getAfter(/databases/$(database)/documents/organizations/$(cid)/customers/$(customer)).data.companyId == cid;}
+   function countDelta(customer,pid,delta){return getAfter(/databases/$(database)/documents/organizations/$(cid)/customers/$(customer)).data.propertyCount == get(/databases/$(database)/documents/organizations/$(cid)/customers/$(customer)).data.propertyCount+delta && getAfter(/databases/$(database)/documents/organizations/$(cid)/customers/$(customer)).data.relationshipMutationId == pid;}
+   allow get: if member(cid);
+   allow create: if request.resource.data.keys().hasOnly(['name','ownerName','ownerUid','companyId','schemaVersion','createdAt']) && request.resource.data.companyId == cid && request.resource.data.schemaVersion == 1 && request.resource.data.createdAt == request.time && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120 && request.resource.data.ownerName is string && request.resource.data.ownerName.size() > 0 && request.resource.data.ownerName.size() <= 120 && bootstrap(cid);
+   match /members/{uid} {
+    allow get: if verified() && request.auth.uid == uid;
+    allow create: if request.auth.uid == uid && request.resource.data.keys().hasOnly(['uid','companyId','role','active','createdAt']) && request.resource.data.uid == uid && request.resource.data.companyId == cid && request.resource.data.role == 'Owner' && request.resource.data.active == true && request.resource.data.createdAt == request.time && bootstrap(cid);
+   }
+   match /employees/{uid} {
+    allow read: if member(cid);
+    allow create: if request.auth.uid == uid && request.resource.data.keys().hasOnly(['uid','companyId','role','name','createdAt']) && request.resource.data.uid == uid && request.resource.data.companyId == cid && request.resource.data.role == 'Owner' && request.resource.data.name == getAfter(/databases/$(database)/documents/organizations/$(cid)).data.ownerName && request.resource.data.createdAt == request.time && bootstrap(cid);
+   }
+   match /customers/{id} {
+    allow read: if owner();
+    allow create: if owner() && customerShape(request.resource.data,id) && fresh(request.resource.data) && request.resource.data.propertyCount == 0 && request.resource.data.relationshipMutationId == '';
+    allow update: if owner() && customerShape(request.resource.data,id) && changed(request.resource.data) && countChange(request.resource.data,id) && (request.resource.data.deletedAt == null || request.resource.data.propertyCount == 0);
+   }
+   match /properties/{id} {
+    allow read: if owner();
+    allow create: if owner() && propertyShape(request.resource.data,id) && fresh(request.resource.data) && activeCustomer(request.resource.data.customerId) && countDelta(request.resource.data.customerId,id,1);
+    allow update: if owner() && propertyShape(request.resource.data,id) && changed(request.resource.data) && ((request.resource.data.deletedAt != null && request.resource.data.customerId == resource.data.customerId && countDelta(resource.data.customerId,id,-1)) || (request.resource.data.deletedAt == null && activeCustomer(request.resource.data.customerId) && (request.resource.data.customerId == resource.data.customerId || (countDelta(resource.data.customerId,id,-1) && countDelta(request.resource.data.customerId,id,1)))));
+   }
+   match /{collection}/{id} {
+    allow read: if collection in ['workOrders','catalogItems','invoices','estimates','changeOrders','documentTemplates'] && member(cid);
+   }
+  }
+ }
+}

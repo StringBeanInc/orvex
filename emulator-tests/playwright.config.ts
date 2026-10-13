@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'.',testMatch:['auth.spec.ts','directory.spec.ts'],globalSetup:'./setup.mjs',globalTeardown:'./teardown.mjs',use:{baseURL:'http://127.0.0.1:5174',channel:'msedge',headless:true},workers:1,reporter:'list',webServer:{command:'npm run dev -- --configLoader runner --port 5174',url:'http://127.0.0.1:5174',reuseExistingServer:true,env:{VITE_ENABLE_PUBLIC_SIGNUP:'true',VITE_FIREBASE_EMULATOR_PROJECT:'demo-orvex-auth-tests'}}});

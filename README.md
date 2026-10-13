@@ -68,3 +68,9 @@ npx playwright test --config audit/playwright.config.ts
 ```
 
 A passing audit regression now requires preservation and recovery. Tests use isolated browser contexts and synthetic local records, never production Firestore. Download your own backup through Settings → Backup & Recovery in the browser/origin containing your data; Codex cannot export another browser's localStorage. Do not migrate personal data without a complete verified backup and reviewed migration plan, and do not deploy authentication/database changes until the security and recovery gates pass.
+
+Phase 2 emulator implementation and manual setup: [Company registration and authentication](docs/firebase-phase-2.md). Open `/account` with `npm run emulators` running. The separate local business workspace and recovery tools remain at `/`. Production company services are disabled.
+
+Phase 3A: company Customers and Properties are enabled at `/account`; see [usage, security and test results](docs/firebase-phase-3a.md). The root `/` remains the separate browser-local workspace.
+
+Public company signup is temporarily closed by default and a server-enforced bootstrap gate. See [signup controls and Firebase Auth limitations](docs/public-signup-control.md). Existing users can sign in normally.

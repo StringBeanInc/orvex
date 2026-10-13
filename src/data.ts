@@ -1,3 +1,4 @@
+import {emptyLocalWorkspace} from './security/companyWorkspace';
 import {ensureNoInterruptedRestore} from './security/backup';
 import type {RecoveryMetadata} from './security/records';
 import {validateCore} from './security/validation';
@@ -41,5 +42,5 @@ export function seed():Data {
 }
 export const storageKey='orvex-v0.1';
 export function readData():{data:Data;error:string;raw:string|null;failed:boolean} {
- let raw:string|null=null;try{raw=localStorage.getItem(storageKey);ensureNoInterruptedRestore();if(raw===null)return {data:seed(),error:'',raw,failed:false};const value=JSON.parse(raw);validateCore(value);return {data:value,error:'',raw,failed:false};}catch{return {data:seed(),error:'Saved data could not be loaded. Sample data is shown read-only. Saving is blocked; original storage is preserved. Use Settings → Backup & Recovery.',raw,failed:true};}
+ let raw:string|null=null;try{raw=localStorage.getItem(storageKey);ensureNoInterruptedRestore();if(raw===null)return {data:sessionStorage.getItem('orvex-explicit-demo')==='yes'?seed():emptyLocalWorkspace(),error:'',raw,failed:false};const value=JSON.parse(raw);validateCore(value);return {data:value,error:'',raw,failed:false};}catch{return {data:emptyLocalWorkspace(),error:'Saved data could not be loaded. An empty read-only view is shown. Saving is blocked; original storage is preserved. Use Settings → Backup & Recovery.',raw,failed:true};}
 }

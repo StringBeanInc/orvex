@@ -10,3 +10,7 @@ playwright-report/
 !.env.example
 
 tmp/
+
+/firebase-export-*/
+
+/firebase-export-*/

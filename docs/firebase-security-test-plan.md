@@ -38,3 +38,11 @@ Record the rules/backend commit, environment IDs, test results, failed-access ev
 Release requires all applicable tests passing, reviewed authorization/rules, a verified personal-data backup before migration, configured and verified managed/object backups, an isolated restore report, and an explicit production migration/deployment plan. An unchecked box or absent project must remain pending, not be labeled complete.
 
 The recommended next code changes are local fail-closed loading, stale-save rejection, and complete verified backup export. After those, implement the emulator-backed organization and command model from [Firebase architecture](firebase-architecture.md).
+
+## Fresh workspace isolation checks
+
+`tests/company-workspace.spec.ts` verifies that a fresh browser exposes no sample customers or implicit saved data; bootstrap payloads have zero business records and only the owner; bootstrap does not consume legacy browser storage; scope guards reject unauthenticated, missing, mismatched, inactive, and unverified membership contexts. These are local contract tests, not Firebase rule enforcement tests. Public registration and cross-tenant backend/rule tests remain pending and are required before enabling cloud access. Local Firebase scaffolding now fails closed and initializes no production connection.
+
+Phase 2 adds 7 Firestore emulator security cases and 5 browser authentication cases, documented in [Phase 2](firebase-phase-2.md). Rules tests clear only disposable demo-orvex emulator Firestore data. Existing 45 application and 3 audit checks remain applicable to the separate local workspace.
+
+Phase 3A adds six directory rules scenarios and four company directory browser scenarios. Rule-test resets are isolated to demo-orvex-rules and demo-orvex-directory-rules, not the user's demo-orvex workspace. Current successful totals are 45 application, 3 audit, 13 rules and 9 emulator browser tests. See [Phase 3A](firebase-phase-3a.md).

@@ -50,6 +50,7 @@ After a crash, **Backup & Recovery** identifies the interruption. Type **RESTORE
 
 ## Verification and remaining work
 
-The normal browser suite has 43 tests, including 16 local security/recovery tests. The separate audit suite now has three preservation/recovery regressions rather than probes that require data loss. Both run only against isolated local browser contexts. The production build uses `npm run build -- --configLoader runner`, which avoids the config-bundling parent-directory scan in the restricted workspace while producing the normal Vite production output.
+The normal browser suite has 45 tests, including 16 local security/recovery tests. The separate audit suite now has three preservation/recovery regressions rather than probes that require data loss. Both run only against isolated local browser contexts. The production build uses `npm run build -- --configLoader runner`, which avoids the config-bundling parent-directory scan in the restricted workspace while producing the normal Vite production output.
 
 Still unfinished: Firebase Authentication, organization memberships and tenant isolation, backend role enforcement, trusted server timestamps/audit history, managed Firestore backups/PITR, separately protected file backups, privileged purge and recovery controls, and real isolated cloud restore drills. No production Firebase connection, migration, push, or deployment was performed for this implementation.
+

@@ -141,3 +141,31 @@ Storage Rules require active membership, a permitted asset class, and appropriat
 5. Configure backups and object recovery, produce successful recovery-drill evidence, then review the migration plan. Production deployment remains blocked until security tests and recovery gates pass.
 
 Emulator rule testing must use controlled synthetic identities; real restore and IAM behavior also require staging verification. [Firebase rule testing](https://firebase.google.com/docs/rules/unit-tests) provides the emulator test approach. No emulator or cloud security tests have passed merely because this architecture is written.
+
+## Fresh company workspace contract (October 12, 2026)
+
+Legacy local data remains under `orvex-v0.1` and `orvex-documents-v1` at its original browser origin. It is a local workspace, not an authenticated company. Registration, login, company selection, and bootstrap must never read or copy these keys. Local backups remain available from Settings → Backup & Recovery. Company adapters must use exclusively organization-scoped Firestore paths; they must not fall back to the local repository when authentication, membership, or cloud loading fails.
+
+A fresh browser now displays an empty local workspace. Demo records require the explicit Open demo workspace action in Settings and cannot replace existing local records. This local demo is not a company account. Failed loads show an empty read-only view and preserve the original bytes.
+
+`src/security/companyWorkspace.ts` provides pure empty bootstrap payloads and path guards. A company has a unique server-generated company ID (the `organizationId` used in this design). The owner is the sole initial membership and employee; all business collections and document templates start empty. Client guards are defense in depth only: they do not constitute deployed tenant isolation.
+
+Public registration must accept personal and business email addresses without invitations. After Firebase authentication and email verification, a trusted backend verifies the token, generates the company ID, and atomically creates the organization, owner membership, employee, and discovery index. An idempotent request prevents repeated registration from producing duplicates. Email domains neither grant ownership nor join existing companies. Only the authoritative active membership grants access. Login, logout, and company changes must cancel subscriptions and clear company caches before exposing a new scope. Demo companies must be explicitly requested and separately scoped.
+
+Future migration is a separate owner-authorized operation, never part of registration. First download and verify the complete local backup in the browser that owns the data. Review the destination company and collection/ID/reference mapping. A tested backend rechecks owner membership, validates every reference and schema, detects collisions, stages the import, and requires explicit approval before committing. Preserve source records and original backups; do not rewrite local keys. Apply company IDs to records and embedded relationships, preserve IDs and historical timestamps, and record migration provenance. Import rollback, tenant isolation, membership revocation, and cross-company denial must pass Firebase emulator tests before production use.
+
+Pending: Firebase Auth/public registration UI, trusted bootstrap endpoint, server-enforced roles and rules, scoped cloud adapters, company cache lifecycle, emulator isolation tests, and any migration. None is connected or deployed in this phase. Existing local records have not been migrated.
+
+Local Firebase scaffolding is disabled: `src/firebase.ts` initializes no project and `firestore.rules` denies all access. These local files have not been deployed; they say nothing about the current rules in any remote Firebase project.
+
+## Phase 2 local implementation
+
+Registration and Firebase Auth are implemented locally at `/account`; see [Phase 2 setup and security contract](firebase-phase-2.md). The narrowly scoped four-document atomic bootstrap is validated by Firestore Rules rather than a new backend. It supersedes the earlier pending/bootstrap statements above for emulator development only. Production registration remains disabled; business writes, migration, invitations and administration are not implemented. Existing local workspace and backup keys stay separate.
+
+## Phase 3A directory implementation
+
+Customers and Properties are now editable for verified company Owners in local Firestore emulators. [Phase 3A](firebase-phase-3a.md) documents rule-validated relationships/counters, revision checks, retained deletion, availability states, test isolation and remaining limits. This supersedes the Phase 2 all-business-writes-denied statement only for these two collections; other module editing is still disabled. Existing company paths and browser-local business keys are preserved. No production deployment or migration occurred.
+
+## Temporary signup closure
+
+Public company registration is now default-off behind VITE_ENABLE_PUBLIC_SIGNUP and an independently enforced platformConfig/publicSignup server gate. This supersedes the public-registration availability statements above for the current normal emulator workspace; existing memberships and directory operations remain intact. See [controls and Auth limitations](public-signup-control.md).
