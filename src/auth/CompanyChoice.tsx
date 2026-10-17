@@ -1,0 +1,7 @@
+import {useEffect,useState} from 'react';
+import type {User} from 'firebase/auth';
+import type {Company} from './company';
+import {loadCompany} from './company';
+import {employeeApi} from '../company/CompanyEmployees';
+// A revoked default membership must not hide other independently authorized companies.
+export default function CompanyChoice({user,onSelect}:{user:User;onSelect:(c:Company)=>void}){const [companies,setCompanies]=useState<Company[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);async function refresh(){setBusy(true);setError('');try{setCompanies((await employeeApi<{companies:Company[]}>('companyMemberships',{})).companies);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}useEffect(()=>{if(user.emailVerified)void refresh();},[user.uid,user.emailVerified]);if(!user.emailVerified)return null;return <section aria-label="Available companies"><h3>Your active companies</h3>{error&&<p role="alert">{error}</p>}{companies.map(c=><button type="button" className="btn secondary" disabled={busy} key={c.companyId} onClick={()=>{setBusy(true);setError('');void loadCompany(user,c.companyId).then(verified=>{if(!verified)throw Error('Active company membership required.');history.replaceState(null,'','/account?company='+encodeURIComponent(verified.companyId));onSelect(verified);}).catch(e=>setError(e.message)).finally(()=>setBusy(false));}}>Open {c.name}</button>)}<button type="button" className="btn secondary" disabled={busy} onClick={()=>void refresh()}>Refresh available companies</button></section>;}

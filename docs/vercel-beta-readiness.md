@@ -1,0 +1,89 @@
+# ORVEX invited-beta deployment readiness
+
+Assessment date: October 16, 2026. Status: **NOT READY for hosted testers**. This is a read-only readiness assessment, not permission to deploy. Only this report was added during this assessment.
+
+## Exact website inspection follow-up
+
+The user confirmed the intended website is **https://orvex-iota.vercel.app/**. A read-only browser inspection on October 16 confirmed:
+
+- `/` serves the older Operations overview dashboard, explicitly labeled **Local workspace v0.1** and **Local data**. It does not serve the new landing page. No business records were opened or edited.
+- `/account?mode=register` returns Vercel **404 NOT_FOUND**. No registration was submitted. The current deployment does not serve the requested account entry route.
+- These observations prove the URL does not expose the current local onboarding experience. They do not establish the deployment SHA, production branch, environment variables, project ownership, or Firebase project. Private Vercel configuration remains inaccessible in the signed-out browser.
+- The URL must remain the final destination. A separate protected beta preview can verify the candidate release first; changing the alias/deployment behind this exact URL requires explicit approval. Do not create a replacement public website.
+- Minimum changes before this URL can work: review/release the existing landing/account code; add Vite SPA routing; implement the narrowly scoped hosted Firebase adapter/backend path; select and configure an isolated beta project; enforce approved participant enrollment; configure real verification/reset email and invitation delivery; complete hosted security and recovery acceptance tests; then approve promotion to this URL.
+- Use **orvex-iota.vercel.app** as the exact proposed beta Auth authorized hostname/approved continue URL origin after project selection. This is a proposed setting, not a change already applied. Preserve the configured Firebase Auth handler domain as required.
+- Required next inputs/approvals: identify the owning Vercel team/project and allow read-only authenticated console inspection; identify/approve the dedicated Firebase beta ID; approve any Blaze/billing or email provider costs; approve bounded hosted-readiness code changes; separately approve synthetic hosted verification, Firebase deployment, Git push and Vercel promotion. No blanket public signup approval is requested.
+
+## Verified blockers and unknowns
+
+| Area | Repository evidence / result |
+|---|---|
+| Working branch | `firebase-preparation`; latest local commit `28e479b` (October 12). Many application modules, Functions, scripts, and landing changes remain uncommitted. Git-based deployments cannot include those files until reviewed, committed, and pushed with approval. |
+| Actual Vercel project | No `.vercel/project.json` or repository `vercel.json` found. Vercel dashboard redirects to login. Existing public URL, linked repository, deployed SHA, production branch, build settings, domains, environment values, and deployment protection remain **unverified**. Local `origin/main` is a cached reference, not proof of the Vercel production branch. |
+| Firebase project | `.firebaserc` references `orvex-2f496` only. No dedicated hosted beta project is established by repository evidence. `demo-orvex*` IDs are emulator targets, not proof of hosted projects. Do not reuse `orvex-2f496` until its purpose/data ownership are verified. |
+| Hosted access | Firebase console redirected toward Google sign-in; automatic approval review blocked that authentication flow. No cloud inventory, live signup gate, deployed rules, billing, backups, or users were inspected. Signed-in read-only access needs user approval; never send passwords or tokens in chat. |
+| Browser Firebase | `src/firebase.ts` permits development on loopback only, uses a demo API key, probes loopback services, and connects emulator clients. Production builds deliberately refuse company services. There is no working hosted Firebase adapter. |
+| Functions | `functions/authorization.mjs` and `functions/index.mjs` enforce emulator flags, project allowlists, and exact loopback addresses. Deploying unchanged would not enable employee/work-order operations. Removing guards globally would be unsafe. |
+| Signup | `src/features.ts` requires `import.meta.env.DEV`, so `VITE_ENABLE_PUBLIC_SIGNUP=true` alone cannot enable hosted registration. Firestore additionally requires `platformConfig/publicSignup.enabled`. Its hosted value is unknown. The boolean gate does not restrict signup to approved participants. |
+| Company bootstrap | `src/auth/company.ts` uses a validated atomic batch, verified email, and Owner membership. Rules use **`organizations/{companyId}`**, not `companies/{companyId}`. Preserve that namespace; no migration is needed. Repeated submission recovery exists locally; hosted concurrency must still be tested. |
+| Files | `firebase.json` configures Auth/Firestore/Functions emulators and Firestore deployment files, but no Storage rules/deployment configuration. No Firebase Storage upload implementation was identified. Storage is not established as necessary for the requested initial workflow. |
+| Integrations | QuickBooks and integration/webhook features are mock/emulator implementations. They must remain unavailable in hosted beta, including backend exports/triggers, not merely navigation. |
+
+The existing Vercel site's exact failure cannot be attributed to its live settings without its URL and project access. Independently, the current local code has sufficient blockers to prevent hosted registration even with correct Vercel environment variables.
+
+## Numbered deployment checklist and approval gates
+
+1. **Identify the existing deployment — read-only.** Record the Vercel team/project, public URL/custom domains, linked Git repository, deployment SHA, production branch, framework, root directory, install/build commands, output directory, runtime versions, environment scopes and domain aliases. Compare its SHA with the reviewed source. The requested URL/team is still pending. Do not assume Vercel deploys `main` or this branch.
+
+2. **Identify an isolated Firebase beta — read-only, then approval if creation is needed.** Inventory accessible Firebase projects and confirm an existing dedicated beta's ID, region, billing account, data classification and IAM. If none exists, obtain approval for a new empty project and any billing. Do not import the October 12 checkpoint, existing local records, or original company data. Never test against an unverified project.
+
+3. **Approve the minimal hosted adaptation before coding/deployment.** Add explicit emulator/hosted-beta configuration with fail-closed project IDs and separate environments. Keep current emulator safeguards intact. Introduce a reviewed hosted backend initialization path using managed runtime identity, active membership and existing permission checks on every sensitive command. Preserve financial permission boundaries. Select only the employee/invitation, company directory, work-order/assignment and technician operations required for this beta; include pricing dependencies only where the workflow needs them. Keep unfinished accounting, API credentials, webhook delivery, and QuickBooks workers unavailable. Do not simply remove every emulator guard or deploy every export.
+
+4. **Approve server-enforced beta enrollment.** Keep global public registration closed. Use platform-controlled, verified-email-bound beta grants, with expiry, revocation, single consumption and an idempotent company-creation transaction. The browser cannot grant itself eligibility or role. Existing employee invitation acceptance remains a separate permission-checked flow. A client flag or hidden button is insufficient. Firestore rules constrain company creation but cannot prevent direct Firebase Auth identity signup. To block nonparticipants before Auth user creation, evaluate Identity Platform Auth blocking functions and approve that service/billing change; allow approved company owners and valid employee invite recipients without blocking legitimate technician onboarding. Otherwise explicitly accept that unused Auth identities may be created, while denying company access. No domain-based ownership.
+
+5. **Prepare required hosted services — approval required to change anything.** Enable email/password Auth, Firestore, and the reviewed Functions subset in the beta project. Choose Firestore location deliberately; review indexes and deploy default-deny rules before clients. Functions require Blaze billing and managed build/runtime infrastructure. Use least-privilege deployment/runtime identities and appropriate region, timeout, instance/concurrency and invocation limits. Vercel hosts the frontend; it does not automatically deploy Firebase Functions or rules. Defer application Storage until uploads are actually in scope. If enabled, require company-scoped rules, size/type limits, private objects, retention, backups and authorization tests first. A separate restricted backup bucket may be necessary even without application uploads.
+
+6. **Prepare Vercel build/environment configuration.** Expected framework: Vite; build `npm run build`; output `dist`; root must be verified. The build also generates/checks backend code, so committed scripts and compatible dependencies must be present. Functions declare Node 22; verify supported frontend/build runtime separately. Add/test SPA fallback for `/account` and other client routes (no repository rewrite currently). Set variables in the intended beta environment only and rebuild after changing them. Proposed names below require implementation in the hosted adapter; they are **not currently supported switches**:
+
+   | Proposed frontend variable | Value/source |
+   |---|---|
+   | `VITE_FIREBASE_MODE` | `hosted-beta`, explicit allowed mode |
+   | `VITE_FIREBASE_PROJECT_ID` | Verified dedicated beta ID |
+   | `VITE_FIREBASE_API_KEY` | Beta Firebase web app configuration |
+   | `VITE_FIREBASE_AUTH_DOMAIN` | Beta web app Auth domain |
+   | `VITE_FIREBASE_APP_ID` | Beta web app ID |
+   | `VITE_FIREBASE_FUNCTIONS_REGION` | Actual deployed callable region |
+   | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Only if required by selected SDK configuration |
+   | `VITE_FIREBASE_STORAGE_BUCKET` | Only if application Storage is enabled |
+   | `VITE_ENABLE_PUBLIC_SIGNUP` | `false`; beta enrollment requires a separate server-authorized flow |
+
+   Firebase web configuration is client-visible; it is not an Admin credential. Never put service-account JSON, private keys, refresh tokens, invitation secrets, QuickBooks secrets, or webhook signing secrets in `VITE_*` or frontend bundles. Runtime secrets belong in managed server secret storage. Do not set emulator host variables in hosted environments. Do not place beta credentials/config into unrelated production/preview environments.
+
+7. **Configure Auth domains and real email flows — approval required.** Authorize only the exact stable beta hostname/custom domain and required Auth handler domain. Verify HTTPS, action URL/continue URL allowlists, verification/reset templates, deliverability, expiry and deep-link handling. Do not authorize broad preview domains indiscriminately. Current invitation delivery must be checked: manual copy-link activation is not an automated email delivery service. Redact invitation/action tokens from logs and referrers; add an explicit delivery service only if approved, including its cost. Test verification, password reset and invitation acceptance in real mailboxes owned by synthetic testers.
+
+8. **Establish recoverability before business data.** Existing `docs/firebase-backup-recovery.md` describes a design, not proof of configured cloud backups. Configure daily Firestore backups with an approved retention window (proposed 30 days), evaluate PITR, and monitor backup success/age. Separately protect Auth identities/UID mappings using a restricted recovery process; Auth exports may contain sensitive password hashes and must never become downloadable business backups. Preserve rules/indexes, release SHA, settings and audit references. If files exist, preserve bytes/generations/checksums separately. Use unique timestamped backup destinations, manifests and integrity checks; no overwrite-in-place. Use separate least-privilege recovery access and deletion alerts. Rehearse restore into a new isolated recovery database/project as supported by the backup/export mechanism; validate relationships, membership isolation, counts and recovery timestamps. Never restore directly over live data. Proposed objectives: RPO <=24h and RTO <=1 business day, subject to an actual measured drill and owner approval. The October 12 checkpoint remains offline recovery evidence, not a hosted backup or verified current company dataset.
+
+9. **Enable monitoring and abuse controls before invitations.** Assign an incident/recovery contact; alert on registration bursts, permission denials, function errors/latency, invite abuse, failed backups and unexpected spending. Use structured logs without passwords, tokens, GPS details or business document contents. Apply server-side rate limits and invite quotas, verified email requirements, email enumeration protection, and App Check where supported; attestations supplement authorization. Test revocation, expired invites, replay and gate closure. Set billing budgets/alerts and service quotas; budget alerts do not enforce a hard spending cap. Review API key restrictions for the web SDK without breaking legitimate Auth calls.
+
+10. **Review costs and obtain explicit approval.** Blaze is required for Functions; usage, builds, artifact storage, network, logs, backups/restore and optional Storage/Identity Platform/email delivery may cost money. Firebase lists no-cost allowances, not a guaranteed zero bill. Exact monthly cost is unknown until project region, traffic, retention and Vercel plan are confirmed. Confirm Vercel plan suitability for a business SaaS beta and any team/usage charges. Approve the billing account, budget, project/settings changes and limited beta scope before resource creation. No plan upgrade was performed.
+
+11. **Approve a specific commit and beta deployment.** Preserve/review all dirty work before selecting a release; no blanket reset/stash/discard. Obtain explicit approval for commit/push and each Firebase/Vercel deployment. Use a beta deployment/domain with beta-only configuration; do not promote to the existing public production URL until accepted. Record rules/functions/frontend versions together and a frontend rollback target. Rollback must not remove valid company data or revert schema blindly. Keep the emulator banner in local mode; replace hosted status only after verifying the actual backend project and deployed services. Never relabel an emulator connection as hosted.
+
+12. **Run hosted acceptance tests using synthetic data only — not yet executed.** After explicit permission to create beta test records: approved Owner signup; real email verification; exactly one company and initial Owner under repeated/concurrent submissions; empty collections despite pre-existing browser-local records; login/logout/reset; invite/revoke/expire/replay and accept a synthetic technician; work-order creation and assignment; technician reads only assigned permitted records; second company cannot read/write any first-company record; forged roles/company IDs/customer-property references rejected; inactive membership and unauthorized financial fields denied; failed writes never show success; refresh persistence; closed/unauthorized signup denied through direct SDK/REST as well as UI; mock integrations inaccessible; backup/restore drill. Test actual deployed rules and backend bypass resistance, not just UI filters. Record release SHA, projects, timestamps and exact results. Existing emulator results are not hosted certification.
+
+13. **Approval to invite real testers.** Require all earlier gates, successful hosted evidence, recovery drill and owner sign-off. Supply the stable Vercel URL, enrollment process, support contact, data policy and known limitations. Start with a small approved cohort; do not enable public registration. Pause if isolation, restore or email/invite flows fail.
+
+## Validation performed and remaining access
+
+Repository, branch/status, source guards, bootstrap rules, Firebase configuration and package scripts were inspected. No hosted workflow tests were run, no test company was created, no data was imported/read/modified, no services were reset, and no deployment/push/billing/configuration change occurred. No new application tests/build were run for this documentation-only assessment. Previously reported local tests do not establish hosted readiness.
+
+Still required: actual Vercel URL/team/project and authorized read-only console access to establish deployment settings and Firebase beta inventory. The browser's Vercel session was signed out; Firebase authentication navigation was automatically blocked. No conclusion that a beta project does not exist can be drawn from that access limitation.
+
+## Vendor references
+
+- [Vercel Vite SPA deployment and rewrites](https://vercel.com/docs/frameworks/frontend/vite)
+- [Vercel environment scopes](https://vercel.com/docs/environment-variables) and [Git deployments](https://vercel.com/docs/git)
+- [Firebase pricing](https://firebase.google.com/pricing)
+- [Auth blocking functions and Identity Platform requirement](https://firebase.google.com/docs/auth/extend-with-blocking-functions)
+- [Firestore backup and restore](https://firebase.google.com/docs/firestore/backups)
+- [Cloud Storage billing requirements](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024)

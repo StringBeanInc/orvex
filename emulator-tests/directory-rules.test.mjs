@@ -1,10 +1,11 @@
+const testPort=Number(process.env.ORVEX_TEST_FIRESTORE_PORT||8180);if(![8180,8280].includes(testPort))throw Error('Only isolated emulator ports are permitted.');
 import {readFileSync} from 'node:fs';
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
 import {doc,setDoc,getDoc,getDocs,collection,collectionGroup,writeBatch,updateDoc,deleteDoc,serverTimestamp,Timestamp} from 'firebase/firestore';
 let env;
-before(async()=>{env=await initializeTestEnvironment({projectId:'demo-orvex-directory-rules',firestore:{host:'127.0.0.1',port:8080,rules:readFileSync('firestore.rules','utf8')}});await env.clearFirestore();await env.withSecurityRulesDisabled(async c=>{for(const [cid,uid] of [['a','alice'],['b','bob']]){await setDoc(doc(c.firestore(),'organizations',cid),{companyId:cid,ownerUid:uid});await setDoc(doc(c.firestore(),'organizations',cid,'members',uid),{uid,companyId:cid,role:'Owner',active:true});}await setDoc(doc(c.firestore(),'organizations','a','members','office'),{active:true,role:'Office Staff'});await setDoc(doc(c.firestore(),'organizations','a','members','inactive'),{active:false,role:'Owner'});})});
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-orvex-directory-rules-'+Date.now(),firestore:{host:'127.0.0.1',port:testPort,rules:readFileSync('firestore.rules','utf8')}});await env.withSecurityRulesDisabled(async c=>{for(const [cid,uid] of [['a','alice'],['b','bob']]){await setDoc(doc(c.firestore(),'organizations',cid),{companyId:cid,ownerUid:uid});await setDoc(doc(c.firestore(),'organizations',cid,'members',uid),{uid,companyId:cid,role:'Owner',active:true});}await setDoc(doc(c.firestore(),'organizations','a','members','office'),{active:true,role:'Office Staff'});await setDoc(doc(c.firestore(),'organizations','a','members','inactive'),{active:false,role:'Owner'});})});
 after(async()=>{await env?.cleanup()});
 const db=(uid='alice',verified=true)=>env.authenticatedContext(uid,{email_verified:verified}).firestore();
 const ref=(s,k,id,cid='a')=>doc(s,'organizations',cid,k,id);

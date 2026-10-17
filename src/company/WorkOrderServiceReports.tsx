@@ -1,0 +1,4 @@
+import {useEffect,useState} from 'react';
+import {employeeApi} from './CompanyEmployees';
+type Report={id:string;note:string;status:string;technicianId:string;revision:number};
+export default function WorkOrderServiceReports({companyId,workOrderId}:{companyId:string;workOrderId:string}){const [reports,setReports]=useState<Report[]>([]),[error,setError]=useState('');useEffect(()=>{let alive=true;void employeeApi<{reports:Report[]}>('workOrderServiceReports',{companyId,workOrderId}).then(v=>{if(alive)setReports(v.reports);}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;};},[companyId,workOrderId]);return <section className="panel employees-panel"><h2>Technician service reports</h2>{error&&<p role="alert">{error}</p>}{reports.length?reports.sort((a,b)=>b.revision-a.revision).map(r=><article key={r.id}><h3>{r.status} · revision {r.revision}</h3><p>{r.note}</p><small>{r.technicianId}</small></article>):<p>No service reports yet.</p>}</section>;}

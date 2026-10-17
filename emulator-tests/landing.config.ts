@@ -1,0 +1,1 @@
+import {defineConfig} from '@playwright/test';export default defineConfig({testDir:'.',testMatch:'landing.spec.ts',use:{baseURL:'http://127.0.0.1:5180',channel:'msedge',headless:true},workers:1,reporter:'list',timeout:180000,expect:{timeout:20000}});

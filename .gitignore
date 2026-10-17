@@ -14,3 +14,6 @@ tmp/
 /firebase-export-*/
 
 /firebase-export-*/
+
+/emulator-backups/
+/functions/shared/

@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {inspectExport,newDestination,main} from '../scripts/emulator-data.mjs';
+const root=path.resolve('tmp/backup-procedure-tests-'+Date.now());
+async function fixture(){const dir=path.join(root,'fixture');await fs.mkdir(path.join(dir,'auth'),{recursive:true});await fs.mkdir(path.join(dir,'firestore'),{recursive:true});await fs.writeFile(path.join(dir,'firebase-export-metadata.json'),JSON.stringify({auth:{path:'auth'},firestore:{metadata_file:'firestore/export.overall_export_metadata'}}));await fs.writeFile(path.join(dir,'auth/accounts.json'),JSON.stringify({users:[]}));await fs.writeFile(path.join(dir,'auth/config.json'),'{}');await fs.writeFile(path.join(dir,'firestore/export.overall_export_metadata'),'synthetic metadata');return dir;}
+test('backup fingerprints verify tampering and do not alter source',async()=>{const dir=await fixture(),a=await inspectExport(dir),b=await inspectExport(dir);assert.equal(a.sha256,b.sha256);await fs.writeFile(path.join(dir,'orvex-integrity.json'),JSON.stringify({sha256:a.sha256}),{flag:'wx'});assert.equal((await inspectExport(dir)).sha256,a.sha256);await fs.writeFile(path.join(dir,'auth/config.json'),'{"changed":true}');await assert.rejects(inspectExport(dir),/integrity mismatch/);});
+test('destinations are unique and existing backups stay untouched',async()=>{const store=path.join(root,'backups'),a=await newDestination(store),b=await newDestination(store);assert.notEqual(a,b);await fs.mkdir(a);await fs.writeFile(path.join(a,'preserve.txt'),'preserve');await newDestination(store);assert.equal(await fs.readFile(path.join(a,'preserve.txt'),'utf8'),'preserve');});
+test('normal startup refuses implicit or unconfirmed import',async()=>{await assert.rejects(main(['start']),/blocked/);await assert.rejects(main(['start','--from','unknown']),/blocked/);await assert.rejects(main(['start','--from','unknown','--confirm-import']));});

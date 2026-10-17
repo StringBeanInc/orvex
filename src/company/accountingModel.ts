@@ -1,0 +1,11 @@
+import {totals} from './pricingModel.ts';
+export const accountingScenarios=['success','rate-limit-once','rate-limit-always','timeout-after-create-once','tax-mismatch','rejected'] as const;
+export function customerPayload(c:Record<string,unknown>){return Object.fromEntries(['id','name','contact','email','phone','streetAddress','addressLine2','city','state','postalCode','country'].map(k=>[k,String(c[k]||'')]));}
+export function invoicePayload(i:any,customerRef:string,mapping:any){
+ if(i.financialSchema!=='phase3e-v1'||i.kind!=='invoice'||i.currency!=='USD'||!i.version||!Number.isSafeInteger(i.issuedAtMs)||!customerRef)throw Error('Only supported issued USD invoice snapshots can be exported.');
+ const p=i.pricing,a=totals(p);if(a.totalCents!==i.totalCents||a.subtotalCents!==i.subtotalCents||a.taxCents!==i.taxCents)throw Error('Invoice totals require review; no recalculation may change the saved document.');
+ if(!mapping?.salesItemRef||!mapping.discountAccountRef||p.taxEnabled&&(!mapping.taxCodeRef||mapping.taxMode!=='explicit'))throw Error('Configure explicit item, tax and discount mappings first.');
+ return {schema:'orvex-mock-qbo-v1',invoiceId:i.id,number:i.number,issuedVersion:i.version,currency:'USD',customerRef,title:String(i.title||''),issuedAtMs:i.issuedAtMs,issuedOn:new Date(i.issuedAtMs).toISOString().slice(0,10),description:String(i.description||''),dueOn:String(i.dueOn||''),lines:p.order.map((id:string)=>{const l=p.items[id];return {description:l.description,quantityMilli:l.quantityMilli,unit:l.unit,unitPriceCents:l.unitPriceCents,amountCents:l.extendedCents,itemRef:mapping.salesItemRef};}),subtotalCents:a.subtotalCents,discountCents:p.discountCents,discountAccountRef:mapping.discountAccountRef,tax:{mode:'explicit',enabled:p.taxEnabled,codeRef:p.taxEnabled?mapping.taxCodeRef:'',label:p.taxLabel,rateBps:p.taxRateBps,amountCents:a.taxCents,appliesAfterDiscount:true},totalCents:a.totalCents};
+}
+export function retryDelay(attempt:number,retryAfterMs=0){return Math.min(300000,Math.max(Math.min(60000,1000*2**Math.max(0,attempt-1)),retryAfterMs));}
+export function safeMoney(v:unknown):v is number{return Number.isSafeInteger(v)&&Number(v)>=0&&Number(v)<=500000000000;}

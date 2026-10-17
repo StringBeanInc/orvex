@@ -1,0 +1,6 @@
+// Reconnect the existing synthetic Firestore trigger after split-service startup.
+// Uses the Firebase CLI's local v2 trigger registration protocol; no data import/reset.
+if(process.argv[2]!=='--connect')throw Error('Explicit --connect is required. Only demo-orvex-phase3c-tests is supported.');
+const project='demo-orvex-phase3c-tests',key='us-central1-integrationWorkOrderEvents';
+for(const url of ['http://127.0.0.1:9299/emulator/v1/projects/'+project+'/config','http://127.0.0.1:5301/'+project+'/us-central1/integrationView']){const r=await fetch(url,{signal:AbortSignal.timeout(10000)});if(r.status>=500)throw Error('Missing synthetic service. No reset or import attempted.');}
+const r=await fetch('http://127.0.0.1:8280/emulator/v1/projects/'+project+'/eventarcTrigger?eventarcTriggerId='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventType:'google.cloud.firestore.document.v1.written',database:'(default)',namespace:'(default)',document:{value:'organizations/{companyId}/workOrders/{workOrderId}',matchType:'PATH_PATTERN'}}),signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('Synthetic trigger registration failed: '+r.status);console.log('Existing synthetic work-order trigger connected. No business records imported, reset or changed.');
