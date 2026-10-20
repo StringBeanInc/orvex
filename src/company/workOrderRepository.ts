@@ -1,3 +1,5 @@
+import {hostedSpark,getCompanyCloudServices} from '../firebase';
+import {commitWorkOrder} from './firestoreWorkOrder';
 import {employeeApi} from './CompanyEmployees';
 import {collection,doc,getDocsFromServer} from 'firebase/firestore';
 import {companyScope,serverDeadline} from './directoryRepository';
@@ -10,5 +12,5 @@ export async function loadWorkOrderActivity(companyId:string,id:string){const {d
 function validate(d:WorkOrderDraft){if(!d.customerId||!d.propertyId||!d.title.trim()||!d.description.trim()||!d.serviceCategory.trim())throw Error('Customer, property, title, description and service category are required.');if(!workOrderStatuses.includes(d.status)||!workOrderPriorities.includes(d.priority))throw Error('Choose a valid status and priority.');for(const date of [d.scheduledDate,d.dueDate])if(date&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(date).toISOString().slice(0,10)!==date))throw Error('Enter valid scheduling dates.');if(d.status==='Scheduled'&&!d.scheduledDate)throw Error('A scheduled work order requires a scheduled date.');if(d.scheduledDate&&d.dueDate&&d.dueDate<d.scheduledDate)throw Error('Due date must be on or after the scheduled date.');}
 export async function saveWorkOrder(companyId:string,id:string,revision:number,input:WorkOrderDraft){
  const draft=Object.fromEntries(Object.keys(emptyWorkOrderDraft()).map(k=>[k,String(input[k as keyof WorkOrderDraft]??'').trim()])) as WorkOrderDraft;validate(draft);
- const {cid}=await companyScope(companyId);const result=await employeeApi<{id:string}>('saveCompanyWorkOrder',{companyId:cid,id,revision,draft,operationId:crypto.randomUUID()});return result.id;
+ const {cid}=await companyScope(companyId);if(hostedSpark){const {auth,db}=await getCompanyCloudServices();await serverDeadline(commitWorkOrder(db,auth.currentUser!.uid,cid,id,revision,draft));return id;}const result=await employeeApi<{id:string}>('saveCompanyWorkOrder',{companyId:cid,id,revision,draft,operationId:crypto.randomUUID()});return result.id;
 }

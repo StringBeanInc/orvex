@@ -1,13 +1,13 @@
 import {useEffect,useRef,useState} from 'react';
 import {httpsCallable} from 'firebase/functions';
-import {getPricingFunctions} from '../firebase';
+import {hostedSpark,getPricingFunctions} from '../firebase';
 import {roles,permissions} from './permissions';
 import type {Membership} from './permissions';
 import './employees.css';
 type Employee={id:string;name:string;email?:string;phone?:string;jobTitle?:string;membership:Membership};
 type Invitation={id:string;email:string;role:string;status:string;expiresAtMs:number;revision:number};
 type View={employees:Employee[];invitations:Invitation[];events:{id:string;action:string;reason:string;actorUid:string;atMs:number}[];canManage:boolean};
-export async function employeeApi<T>(name:string,data:unknown){return (await httpsCallable<unknown,T>(await getPricingFunctions(),name)(data)).data;}
+export async function employeeApi<T>(name:string,data:unknown){if(hostedSpark){const {sparkApi}=await import('./sparkRepository');return await sparkApi(name,data) as T;}return (await httpsCallable<unknown,T>(await getPricingFunctions(),name)(data)).data;}
 export default function CompanyEmployees({companyId,owner}:{companyId:string;owner:boolean}){
  const [view,setView]=useState<View>(),[error,setError]=useState(''),[busy,setBusy]=useState(false),[search,setSearch]=useState(''),[editor,setEditor]=useState<Employee>(),[inviting,setInviting]=useState(false),[link,setLink]=useState(''),[reason,setReason]=useState(''),[address,setAddress]=useState(''),[role,setRole]=useState('Technician'),[grants,setGrants]=useState<string[]>([]),[status,setStatus]=useState('active');
  const pending=useRef<Record<string,unknown>|null>(null);

@@ -4,7 +4,7 @@ import {activeMember} from '../company/permissions';
 import {requirePublicSignup} from './signupGate';
 import {doc,getDoc,getDocFromServer,writeBatch,serverTimestamp,collection} from 'firebase/firestore';
 import type {User} from 'firebase/auth';
-import {getCompanyCloudServices} from '../firebase';
+import {hostedSpark,getCompanyCloudServices} from '../firebase';
 export type Company={companyId:string;name:string;ownerName:string;ownerUid:string;phone?:string;timeZone?:string;membershipRole?:string;membership?:Membership};
 export async function loadCompany(user:User,selectedCompanyId?:string):Promise<Company|null>{
  if(!user.emailVerified)return null;
@@ -18,6 +18,7 @@ export async function createCompany(user:User,name:string,ownerName:string,phone
  const existing=await loadCompany(user);if(existing)return existing;
  await requirePublicSignup();
  const {db}=await getCompanyCloudServices();const ref=doc(collection(db,'organizations'));const cid=ref.id;const batch=writeBatch(db);const createdAt=serverTimestamp();
+ if(hostedSpark)batch.set(doc(db,'platformConfig','firstCompany'),{companyId:cid,ownerUid:user.uid,createdAt});
  batch.set(ref,{companyId:cid,...details,ownerUid:user.uid,schemaVersion:1,createdAt});
  batch.set(doc(db,'users',user.uid),{companyId:cid,createdAt});
  batch.set(doc(db,'organizations',cid,'members',user.uid),{uid:user.uid,companyId:cid,role:'Owner',active:true,createdAt});

@@ -1,4 +1,4 @@
-import {initializeAppCheck,ReCaptchaV3Provider} from 'firebase/app-check';
+import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'firebase/app-check';
 import {getFunctions,connectFunctionsEmulator} from 'firebase/functions';
 const phase3d=import.meta.env.VITE_FIREBASE_EMULATOR_PROJECT==='demo-orvex-phase3d-tests';
 const phase3c=import.meta.env.VITE_FIREBASE_EMULATOR_PROJECT==='demo-orvex-phase3c-tests';
@@ -10,14 +10,16 @@ import {initializeApp} from 'firebase/app';
 import {getAuth,connectAuthEmulator,browserLocalPersistence,setPersistence} from 'firebase/auth';
 import {initializeFirestore,connectFirestoreEmulator} from 'firebase/firestore';
 export const hostedBeta=import.meta.env.VITE_FIREBASE_MODE==='hosted-beta';
+// Hosted beta defaults to Firestore-only: no paid backend calls.
+export const hostedSpark=hostedBeta&&import.meta.env.VITE_FIREBASE_BACKEND!=='functions';
 function hostedConfig(){
  const e=import.meta.env;
- if(e.DEV||location.hostname!=='orvex-iota.vercel.app'||e.VITE_FIREBASE_PROJECT_ID!=='orvex-2f496'||e.VITE_FIREBASE_AUTH_DOMAIN!=='orvex-2f496.firebaseapp.com'||!e.VITE_FIREBASE_API_KEY||!e.VITE_FIREBASE_APP_ID||!e.VITE_FIREBASE_APPCHECK_SITE_KEY)throw new Error('Hosted beta configuration is incomplete or not approved for this origin.');
+ if(e.DEV||!['orvex-iota.vercel.app','orvex-git-firebase-preparation-stringbeaninc.vercel.app','orvex-2f496.web.app','orvex-2f496.firebaseapp.com'].includes(location.hostname)||e.VITE_FIREBASE_PROJECT_ID!=='orvex-2f496'||e.VITE_FIREBASE_AUTH_DOMAIN!=='orvex-2f496.firebaseapp.com'||!e.VITE_FIREBASE_API_KEY||!e.VITE_FIREBASE_APP_ID||!e.VITE_FIREBASE_APPCHECK_SITE_KEY)throw new Error('Hosted beta configuration is incomplete or not approved for this origin.');
  return {apiKey:e.VITE_FIREBASE_API_KEY,projectId:e.VITE_FIREBASE_PROJECT_ID,authDomain:e.VITE_FIREBASE_AUTH_DOMAIN,appId:e.VITE_FIREBASE_APP_ID};
 }
 let services: ReturnType<typeof initialize> | undefined;
 function initialize(){
- if(hostedBeta){const app=initializeApp(hostedConfig(),'company-hosted-beta');initializeAppCheck(app,{provider:new ReCaptchaV3Provider(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true});return {auth:getAuth(app),db:initializeFirestore(app,{})};}
+ if(hostedBeta){const app=initializeApp(hostedConfig(),'company-hosted-beta');initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true});return {auth:getAuth(app),db:initializeFirestore(app,{})};}
  if(!import.meta.env.DEV || !['localhost','127.0.0.1'].includes(location.hostname))throw new Error('Company accounts are available only in local emulator development. Production access is disabled.');
  const app=initializeApp({apiKey:'demo-orvex-key',projectId:emulatorProject,authDomain:`${emulatorProject}.firebaseapp.com`},'company-emulator');
  const auth=getAuth(app);connectAuthEmulator(auth,`http://127.0.0.1:${emulatorAuthPort}`);
@@ -32,4 +34,4 @@ export async function getCompanyCloudServices(){
 }
 
 let pricingFunctions:ReturnType<typeof getFunctions>|undefined;
-export async function getPricingFunctions(){const {auth}=await getCompanyCloudServices();if(!pricingFunctions){pricingFunctions=getFunctions(auth.app,'us-central1');if(!hostedBeta)connectFunctionsEmulator(pricingFunctions,'127.0.0.1',phase3d?15401:phase3c?5301:5001);}return pricingFunctions;}
+export async function getPricingFunctions(){if(hostedSpark)throw new Error('This feature requires a trusted backend and is disabled in the Spark beta.');const {auth}=await getCompanyCloudServices();if(!pricingFunctions){pricingFunctions=getFunctions(auth.app,'us-central1');if(!hostedBeta)connectFunctionsEmulator(pricingFunctions,'127.0.0.1',phase3d?15401:phase3c?5301:5001);}return pricingFunctions;}

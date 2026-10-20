@@ -17,3 +17,7 @@ tmp/
 
 /emulator-backups/
 /functions/shared/
+.vercel
+.env*
+!/.env.beta.example
+!/functions/.env.orvex-2f496.example

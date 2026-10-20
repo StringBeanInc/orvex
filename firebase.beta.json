@@ -1,0 +1,13 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.beta.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions",
+    "codebase": "pricing",
+    "predeploy": ["npm run build:pricing-backend", "node scripts/prepare-beta-rules.mjs"]
+  }
+}
