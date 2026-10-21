@@ -1,0 +1,15 @@
+import {test,before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
+import {doc,setDoc,getDoc,updateDoc,deleteDoc,serverTimestamp} from 'firebase/firestore';
+let env;
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-orvex-staff-'+Date.now(),firestore:{host:'127.0.0.1',port:8280,rules:readFileSync('firestore.single-company.rules','utf8')}});await env.withSecurityRulesDisabled(async c=>{for(const [cid,uid,role,active] of [['a','owner','Owner',true],['b','foreign','Owner',true],['a','tech','Technician',true],['a','inactive','Owner',false]])await setDoc(doc(c.firestore(),'organizations',cid,'members',uid),{companyId:cid,uid,role,active});});});
+after(async()=>env?.cleanup());
+const db=(uid='owner',verified=true)=>env.authenticatedContext(uid,{email_verified:verified}).firestore();
+const ref=(s,id='staff',cid='a')=>doc(s,'organizations',cid,'staffProfiles',id);
+const profile=(id='staff')=>({id,companyId:'a',name:'Synthetic technician',email:'tech@example.test',phone:'',jobTitle:'Service technician',role:'Technician',active:true,revision:1,createdAt:serverTimestamp(),createdBy:'owner',updatedAt:serverTimestamp(),updatedBy:'owner'});
+test('Owner creates, reloads, edits and deactivates a persistent staff profile',async()=>{const s=db();await assertSucceeds(setDoc(ref(s),profile()));assert.equal((await getDoc(ref(db()))).data().name,'Synthetic technician');await assertSucceeds(updateDoc(ref(s),{name:'Updated',revision:2,updatedAt:serverTimestamp()}));await assertSucceeds(updateDoc(ref(s),{active:false,revision:3,updatedAt:serverTimestamp()}));assert.equal((await getDoc(ref(s))).data().active,false);await assertSucceeds(updateDoc(ref(s),{active:true,revision:4,updatedAt:serverTimestamp()}));});
+test('stale writes, forged ownership, invalid fields and hard deletion are rejected',async()=>{const s=db();await assertFails(updateDoc(ref(s),{name:'stale',revision:4,updatedAt:serverTimestamp()}));await assertFails(updateDoc(ref(s),{companyId:'b',revision:5,updatedAt:serverTimestamp()}));await assertFails(updateDoc(ref(s),{role:'Owner',revision:5,updatedAt:serverTimestamp()}));await assertFails(updateDoc(ref(s),{permissions:['employees.manage'],revision:5,updatedAt:serverTimestamp()}));await assertFails(deleteDoc(ref(s)));assert.equal((await getDoc(ref(s))).data().revision,4);});
+test('foreign, technician, inactive, unverified and anonymous clients cannot access staff',async()=>{for(const s of [db('foreign'),db('tech'),db('inactive'),db('owner',false),env.unauthenticatedContext().firestore()]){await assertFails(getDoc(ref(s)));await assertFails(setDoc(ref(s,'forged'),profile('forged')));}});
+test('staff profiles cannot create authenticated memberships or change Owner roles',async()=>{const s=db();await assertFails(setDoc(doc(s,'organizations','a','members','staff'),{uid:'staff',companyId:'a',role:'Owner',active:true}));await assertFails(updateDoc(doc(s,'organizations','a','members','owner'),{role:'Technician'}));});

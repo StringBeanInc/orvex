@@ -1,29 +1,368 @@
-import {useEffect,useRef,useState} from 'react';
-import {httpsCallable} from 'firebase/functions';
-import {hostedSpark,getPricingFunctions} from '../firebase';
-import {roles,permissions} from './permissions';
-import type {Membership} from './permissions';
+import BackendEmployees from './BackendEmployees';
+
+import { useEffect, useState } from 'react';
+import { httpsCallable } from 'firebase/functions';
+import { hostedSpark, getPricingFunctions } from '../firebase';
+import {
+  listStaffProfiles,
+  createStaffProfile,
+  updateStaffProfile,
+} from './sparkEmployees';
+import type { StaffProfile } from './sparkEmployees';
 import './employees.css';
-type Employee={id:string;name:string;email?:string;phone?:string;jobTitle?:string;membership:Membership};
-type Invitation={id:string;email:string;role:string;status:string;expiresAtMs:number;revision:number};
-type View={employees:Employee[];invitations:Invitation[];events:{id:string;action:string;reason:string;actorUid:string;atMs:number}[];canManage:boolean};
-export async function employeeApi<T>(name:string,data:unknown){if(hostedSpark){const {sparkApi}=await import('./sparkRepository');return await sparkApi(name,data) as T;}return (await httpsCallable<unknown,T>(await getPricingFunctions(),name)(data)).data;}
-export default function CompanyEmployees({companyId,owner}:{companyId:string;owner:boolean}){
- const [view,setView]=useState<View>(),[error,setError]=useState(''),[busy,setBusy]=useState(false),[search,setSearch]=useState(''),[editor,setEditor]=useState<Employee>(),[inviting,setInviting]=useState(false),[link,setLink]=useState(''),[reason,setReason]=useState(''),[address,setAddress]=useState(''),[role,setRole]=useState('Technician'),[grants,setGrants]=useState<string[]>([]),[status,setStatus]=useState('active');
- const pending=useRef<Record<string,unknown>|null>(null);
- async function load(){setBusy(true);setError('');try{setView(await employeeApi<View>('employeeView',{companyId}));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- useEffect(()=>{void load();},[companyId]);
- function edit(e:Employee){setEditor({...e});setInviting(false);setRole(e.membership.role||'Technician');setGrants(e.membership.permissions||[]);setStatus(e.membership.status||(e.membership.active?'active':'deactivated'));setReason('');setLink('');}
- async function command(data:Record<string,unknown>){setBusy(true);setError('');pending.current??={...data,companyId,operationId:crypto.randomUUID()};try{const r=await employeeApi<{token?:string;invitationId?:string}>('employeeCommand',pending.current);pending.current=null;if(r.token)setLink(`${location.origin}/account?inviteCompany=${encodeURIComponent(companyId)}&inviteId=${r.invitationId}&inviteToken=${encodeURIComponent(r.token)}`);setEditor(undefined);setInviting(false);await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- const uncertain=!!pending.current;
- return <section className="panel employees-panel" aria-busy={busy}><h2>Employees</h2><p>Employment changes preserve work history. Financial grants and internal cost access are separate.</p>{error&&<p role="alert">{error}</p>}{busy&&<p role="status">Waiting for server confirmation…</p>}{uncertain?<div><button className="btn primary" disabled={busy} onClick={()=>void command(pending.current!)}>Retry the same request</button><button className="btn secondary" disabled={busy} onClick={()=>{pending.current=null;void load();}}>Refresh and review outcome</button></div>:<button className="btn secondary" disabled={busy} onClick={()=>void load()}>Refresh directory</button>}
- {link&&<div role="status"><p>Copy this single-use invitation link now. It is not saved in readable form and no email was sent.</p><input aria-label="Invitation link" readOnly value={link} onFocus={e=>e.target.select()}/></div>}
- {view?.canManage&&!uncertain&&<button className="btn primary" disabled={busy} onClick={()=>{setInviting(true);setEditor(undefined);setAddress('');setRole('Technician');setGrants([]);setReason('');setLink('');}}>Invite employee</button>}
- {(inviting||editor)&&<form className="employee-editor" onSubmit={e=>{e.preventDefault();void command(inviting?{action:'invite',email:address,role,permissions:grants,reason}:{action:'updateEmployee',targetUid:editor!.id,revision:editor!.membership.revision||0,name:editor!.name,phone:editor!.phone||'',jobTitle:editor!.jobTitle||'',status,role,permissions:grants,reason});}}><h3>{inviting?'Invite employee':'Employee profile'}</h3><fieldset disabled={busy||uncertain}>{inviting?<label>Business email<input type="email" required value={address} onChange={e=>setAddress(e.target.value)}/></label>:<><label>Name<input required maxLength={120} value={editor!.name} onChange={e=>setEditor({...editor!,name:e.target.value})}/></label><label>Phone<input maxLength={80} value={editor!.phone||''} onChange={e=>setEditor({...editor!,phone:e.target.value})}/></label><label>Job title<input maxLength={120} value={editor!.jobTitle||''} onChange={e=>setEditor({...editor!,jobTitle:e.target.value})}/></label><label>Status<select aria-label="Status" value={status} onChange={e=>setStatus(e.target.value)}>{['active','suspended','deactivated'].map(s=><option key={s}>{s}</option>)}</select></label></>}
- <label>Role<select aria-label="Role" value={role} onChange={e=>setRole(e.target.value)}>{roles.filter(r=>owner||!['Owner','Administrator'].includes(r)).map(r=><option key={r}>{r}</option>)}{role==='Admin'&&<option>Admin</option>}</select></label>
- {owner&&<details><summary>Explicit permission grants</summary><p>Financial access does not grant internal costs. Grant only the actions this employee needs.</p><div className="employee-grants">{permissions.map(p=><label key={p}><input type="checkbox" checked={grants.includes(p)} onChange={e=>setGrants(e.target.checked?[...grants,p]:grants.filter(g=>g!==p))}/>{p}</label>)}</div></details>}
- <label>Reason<input required minLength={5} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label><button className="btn primary">{inviting?'Create invitation':'Save employee'}</button><button type="button" className="btn secondary" onClick={()=>{setEditor(undefined);setInviting(false);}}>Cancel</button></fieldset></form>}
- <label>Search employees<input type="search" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="table-scroll"><table><thead><tr><th>Name / job title</th><th>Role</th><th>Status</th><th>Profile</th></tr></thead><tbody>{view?.employees.filter(e=>`${e.name} ${e.email||''} ${e.jobTitle||''}`.toLowerCase().includes(search.toLowerCase())).map(e=><tr key={e.id}><td>{e.name}<br/><span>{e.jobTitle}</span></td><td>{e.membership?.role}</td><td>{e.membership?.status||(e.membership?.active?'active':'deactivated')}</td><td>{view.canManage&&<button className="btn secondary" disabled={busy||uncertain||!owner&&['Owner','Administrator','Admin'].includes(e.membership?.role||'')} onClick={()=>edit(e)}>Edit {e.name}</button>}</td></tr>)}</tbody></table></div>
- {view?.canManage&&<><h3>Invitations</h3>{view.invitations.map(i=><div className="employee-invitation" key={i.id}><span>{i.email} · {i.role} · {i.status==='invited'&&i.expiresAtMs<Date.now()?'expired':i.status}</span>{i.status==='invited'&&<button className="btn secondary" disabled={busy||uncertain} onClick={()=>{const reason=prompt('Reason for revocation (at least five characters)');if(reason)void command({action:'revokeInvitation',invitationId:i.id,revision:i.revision,reason});}}>Revoke</button>}</div>)}<details><summary>Membership audit history</summary>{view.events.sort((a,b)=>b.atMs-a.atMs).map(e=><p key={e.id}>{new Date(e.atMs).toLocaleString()} · {e.action} · {e.reason} · {e.actorUid}</p>)}</details></>}
- </section>;
+
+export async function employeeApi<T>(
+  name: string,
+  data: unknown
+): Promise<T> {
+  if (hostedSpark) {
+    const { sparkApi } = await import('./sparkRepository');
+    return (await sparkApi(name, data)) as T;
+  }
+
+  return (
+    await httpsCallable<unknown, T>(
+      await getPricingFunctions(),
+      name
+    )(data)
+  ).data;
+}
+
+const staffRoles = [
+  'Administrator',
+  'Manager',
+  'Office Staff',
+  'Technician',
+];
+
+function SparkEmployees({
+  companyId,
+  owner,
+}: {
+  companyId: string;
+  owner: boolean;
+}) {
+  const [employees, setEmployees] = useState<StaffProfile[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState<StaffProfile | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [role, setRole] = useState('Technician');
+  const [active, setActive] = useState(true);
+
+  async function load() {
+    setBusy(true);
+    setError('');
+
+    try {
+      setEmployees(await listStaffProfiles(companyId));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, [companyId]);
+
+  function resetForm() {
+    setEditing(null);
+    setAdding(false);
+    setName('');
+    setEmail('');
+    setPhone('');
+    setJobTitle('');
+    setRole('Technician');
+    setActive(true);
+  }
+
+  function startAdd() {
+    resetForm();
+    setAdding(true);
+  }
+
+  function startEdit(employee: StaffProfile) {
+    setEditing(employee);
+    setAdding(false);
+    setName(employee.name);
+    setEmail(employee.email || '');
+    setPhone(employee.phone || '');
+    setJobTitle(employee.jobTitle || '');
+    setRole(employee.role);
+    setActive(employee.active);
+  }
+
+  async function save() {
+    setBusy(true);
+    setError('');
+
+    try {
+      const input = {
+        name,
+        email,
+        phone,
+        jobTitle,
+        role,
+      };
+
+      if (editing) {
+        await updateStaffProfile(
+          companyId,
+          editing.id,
+          input,
+          active,
+          editing.revision
+        );
+      } else {
+        await createStaffProfile(companyId, input);
+      }
+
+      resetForm();
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const filtered = employees.filter((employee) =>
+    [
+      employee.name,
+      employee.email,
+      employee.phone,
+      employee.jobTitle,
+      employee.role,
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  return (
+    <section className="panel employees-panel">
+      <h2>Employees & Technicians</h2>
+
+      <p>
+        Manage staff profiles independently of ORVEX login
+        accounts. Creating a profile does not grant system access.
+      </p>
+
+      {error && <p role="alert">{error} <button className="btn secondary" disabled={busy} onClick={()=>void load()}>Retry</button></p>}
+
+      {busy && <p role="status">Loading employees…</p>}
+
+      {owner && !adding && !editing && (
+        <button
+          className="btn primary"
+          disabled={busy}
+          onClick={startAdd}
+        >
+          Add Employee
+        </button>
+      )}
+
+      {(adding || editing) && (
+        <form
+          className="employee-editor"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
+          <h3>
+            {editing ? 'Edit Employee' : 'Add Employee'}
+          </h3>
+
+          <fieldset disabled={busy}>
+            <label>
+              Full Name
+              <input
+                required
+                maxLength={120}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Email
+              <input
+                type="email"
+                maxLength={254}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Phone
+              <input
+                maxLength={80}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Job Title
+              <input
+                maxLength={120}
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Role
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                {staffRoles.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {editing && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={(e) =>
+                    setActive(e.target.checked)
+                  }
+                />
+                Active Employee
+              </label>
+            )}
+
+            <button
+              className="btn primary"
+              type="submit"
+            >
+              {editing
+                ? 'Save Changes'
+                : 'Create Employee'}
+            </button>
+
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          </fieldset>
+        </form>
+      )}
+
+      <label>
+        Search Employees
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </label>
+
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filtered.map((employee) => (
+              <tr key={employee.id}>
+                <td>
+                  {employee.name}
+                  <br />
+                  <span>{employee.jobTitle}</span>
+                </td>
+
+                <td>{employee.role}</td>
+
+                <td>
+                  {employee.active
+                    ? 'Active'
+                    : 'Inactive'}
+                </td>
+
+                <td>
+                  {owner && (
+                    <button
+                      className="btn secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        startEdit(employee)
+                      }
+                    >
+                      Edit
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+
+            {!filtered.length && (
+              <tr>
+                <td colSpan={4}>
+                  No employee profiles found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <button
+        className="btn secondary"
+        disabled={busy}
+        onClick={() => void load()}
+      >
+        Refresh
+      </button>
+    </section>
+  );
+}
+
+export default function CompanyEmployees({
+  companyId,
+  owner,
+}: {
+  companyId: string;
+  owner: boolean;
+}) {
+  if (hostedSpark) {
+    return (
+      <SparkEmployees
+        companyId={companyId}
+        owner={owner}
+      />
+    );
+  }
+
+  return (
+    <BackendEmployees
+      companyId={companyId}
+      owner={owner}
+    />
+  );
 }

@@ -14,7 +14,10 @@ export const hostedBeta=import.meta.env.VITE_FIREBASE_MODE==='hosted-beta';
 export const hostedSpark=hostedBeta&&import.meta.env.VITE_FIREBASE_BACKEND!=='functions';
 function hostedConfig(){
  const e=import.meta.env;
- if(e.DEV||!['orvex-iota.vercel.app','orvex-git-firebase-preparation-stringbeaninc.vercel.app','orvex-2f496.web.app','orvex-2f496.firebaseapp.com'].includes(location.hostname)||e.VITE_FIREBASE_PROJECT_ID!=='orvex-2f496'||e.VITE_FIREBASE_AUTH_DOMAIN!=='orvex-2f496.firebaseapp.com'||!e.VITE_FIREBASE_API_KEY||!e.VITE_FIREBASE_APP_ID||!e.VITE_FIREBASE_APPCHECK_SITE_KEY)throw new Error('Hosted beta configuration is incomplete or not approved for this origin.');
+ const approvedOrigins=e.DEV
+  ? ['localhost','127.0.0.1']
+  : ['orvex-iota.vercel.app','orvex-git-firebase-preparation-stringbeaninc.vercel.app','orvex-2f496.web.app','orvex-2f496.firebaseapp.com'];
+ if(!approvedOrigins.includes(location.hostname)||e.VITE_FIREBASE_PROJECT_ID!=='orvex-2f496'||e.VITE_FIREBASE_AUTH_DOMAIN!=='orvex-2f496.firebaseapp.com'||!e.VITE_FIREBASE_API_KEY||!e.VITE_FIREBASE_APP_ID||!e.VITE_FIREBASE_APPCHECK_SITE_KEY)throw new Error('Hosted beta configuration is incomplete or not approved for this origin.');
  return {apiKey:e.VITE_FIREBASE_API_KEY,projectId:e.VITE_FIREBASE_PROJECT_ID,authDomain:e.VITE_FIREBASE_AUTH_DOMAIN,appId:e.VITE_FIREBASE_APP_ID};
 }
 let services: ReturnType<typeof initialize> | undefined;
