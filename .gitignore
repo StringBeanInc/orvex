@@ -10,3 +10,23 @@ playwright-report/
 !.env.example
 
 tmp/
+.vercel
+.env*
+
+# Local backups and emulator artifacts
+*.bak
+firebase-export-*/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+/Get-ChildItem
+/Get-Content
+*.backup
+
+# Excluded from ORVEX frontend deployment
+/emulator-isolation/
+/production-backups/
+/functions-production/
+/functions/
+/firebase.cloud-emulator.json
+/firebase.production-test.json

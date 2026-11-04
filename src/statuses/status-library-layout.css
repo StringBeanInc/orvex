@@ -1,0 +1,9 @@
+.status-library{
+  position:static;
+  inset:auto;
+  z-index:auto;
+  width:auto;
+  max-width:none;
+  margin:0;
+  overflow:visible;
+}

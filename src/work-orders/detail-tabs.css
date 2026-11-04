@@ -1,0 +1,8 @@
+.work-order-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #cddbea}
+.work-order-tabs button{padding:14px 18px;border:1px solid transparent;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:transparent;color:#60728b;font-size:13px;font-weight:650;cursor:pointer}
+.work-order-tabs button:hover{background:#edf3fc;color:#245ac0}
+.work-order-tabs button[aria-selected=true]{background:#fff;border-color:#dce5f0;border-bottom-color:#2867e8;color:#245ac0}
+.work-order-tabs button:focus-visible{outline:2px solid #2867e8;outline-offset:2px}
+.work-order-tab-panel:not([hidden]){display:flex;flex-direction:column;gap:20px}
+.work-order-tab-panel[hidden]{display:none}
+@media(max-width:600px){.work-order-tabs button{padding:12px 10px;font-size:12px}}

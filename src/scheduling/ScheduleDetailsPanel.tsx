@@ -1,0 +1,11 @@
+import {CalendarDays,ExternalLink,MapPin,UserRound,X} from 'lucide-react';
+import type {WorkOrder} from '../data';
+import type {ScheduleLookups} from './types';
+
+const stamp=(value:string)=>new Date(value).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+
+export default function ScheduleDetailsPanel({order,lookups,onClose,onOpen}:{order:WorkOrder|null;lookups:ScheduleLookups;onClose:()=>void;onOpen:(id:string)=>void}){
+ if(!order)return <aside className="schedule-details schedule-details-empty"><CalendarDays size={27}/><h2>Select a work order</h2><p>Choose an appointment in any view to inspect its schedule, location, and assigned technician.</p></aside>;
+ const property=lookups.property(order.propertyId),technician=lookups.technician(order.technicianId);
+ return <aside className="schedule-details" aria-label="Selected work order details"><header><div><p className="schedule-kicker">{order.id}</p><h2>{order.title}</h2></div><button className="icon-btn" aria-label="Close work order details" onClick={onClose}><X size={18}/></button></header><div className="schedule-detail-badges"><span className={`schedule-status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</span><span className={`schedule-priority ${order.priority.toLowerCase()}`}>{order.priority}</span></div><dl><div><dt><MapPin size={15}/>Property</dt><dd>{property?.name||'Property unavailable'}<small>{[property?.address,property?.city,property?.state,property?.postalCode].filter(Boolean).join(', ')||'Address unavailable'}</small></dd></div><div><dt><CalendarDays size={15}/>Scheduled</dt><dd>{stamp(order.scheduled)}<small>End time is not yet tracked.</small></dd></div><div><dt><UserRound size={15}/>Assigned technician</dt><dd>{technician?.name||'Unassigned'}<small>{technician?.specialty||'Technician details unavailable'}</small></dd></div><div><dt>Job region</dt><dd>Not configured<small>Regional scheduling can be added when the company data includes regions.</small></dd></div></dl><section><h3>Description</h3><p>{order.description||'No work description provided.'}</p></section><button className="btn primary schedule-open-order" onClick={()=>onOpen(order.id)}>Open work order<ExternalLink size={15}/></button></aside>;
+}

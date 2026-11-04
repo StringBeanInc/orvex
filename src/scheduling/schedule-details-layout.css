@@ -1,0 +1,2 @@
+.scheduling-layout:has(.schedule-details-empty){grid-template-columns:minmax(0,1fr)}
+.scheduling-layout .schedule-details-empty{display:none}

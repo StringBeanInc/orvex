@@ -1,0 +1,42 @@
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #cdd9e8;
+}
+
+.settings-tabs button {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 11px 15px;
+  border: 1px solid #dfe7f0;
+  border-bottom: 3px solid transparent;
+  border-radius: 8px 8px 0 0;
+  background: #edf2f8;
+  color: #526780;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.settings-tabs button:hover {
+  background: #e3ecf8;
+  color: #244f8c;
+}
+
+.settings-tabs button.active {
+  border-color: #bfd2ef;
+  border-bottom-color: #2867e8;
+  background: #fff;
+  color: #205bc6;
+}
+
+.settings-tabs button:focus-visible {
+  outline: 2px solid #2867e8;
+  outline-offset: 2px;
+}

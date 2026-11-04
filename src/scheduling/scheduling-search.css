@@ -1,0 +1,2 @@
+.scheduling-filters .schedule-search{flex:0 1 360px;width:min(360px,100%)}
+@media(max-width:720px){.scheduling-filters .schedule-search{flex:1 1 100%;width:100%}}

@@ -4,19 +4,28 @@ import {validateCore} from './security/validation';
 export type Receipt = {id:string;name:string;dataUrl:string};
 export type CatalogItem = RecoveryMetadata & {id:string;category:'Labor'|'Supplies'|'Expenditures';description:string;unitCostCents:number;baseCostCents?:number;markupPercent?:number;markupCents?:number;details?:string;materialUrl?:string;skuCode?:string;includeTaxes?:boolean;receipts?:Receipt[]};
 export type LineItem = RecoveryMetadata & {id:string;catalogItemId?:string;category:'Labor'|'Supplies'|'Expenditures';description:string;details?:string;materialUrl?:string;skuCode?:string;includeTaxes?:boolean;receipts?:Receipt[];quantity:number;unitCostCents:number};
-export type Status = 'Open' | 'In progress' | 'Completed';
+export type Status = string;
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
-export type Customer = RecoveryMetadata & {id:string;name:string;contact:string;email:string;phone:string;streetAddress?:string;addressLine2?:string;city?:string;state?:string;postalCode?:string;country?:string};
-export type Property = RecoveryMetadata & {id:string;name:string;address:string;city?:string;state?:string;postalCode?:string;customerId:string;type:string};
+export type WorkOrderStatusDefinition={id:string;name:string;color:string;terminal:boolean;archived?:boolean};
+export type WorkOrderWorkflow={statuses:WorkOrderStatusDefinition[];defaultStatusId:string};
+export type DashboardWidgetId=string;
+export type DashboardStageDefinition={id:string;label:string;statusIds:string[]};
+export type DashboardPreferences={hiddenWidgets?:DashboardWidgetId[];stages?:DashboardStageDefinition[]};
+export type WorkOrderNumberFormat='wo-sequence'|'work-order-year'|'dated-sequence';
+export type WorkOrderNumbering={format:WorkOrderNumberFormat;nextNumber:number;sequencePrefix?:string;sequenceWidth?:number};
+export type SchedulingMapPreferences={defaultLocation?:string;defaultPropertyId?:string};
+export type SavedLocation={latitude:number;longitude:number;formattedAddress:string;provider:string;placeId?:string;geocodedAt:string};
+export type Customer = RecoveryMetadata & {id:string;name:string;contact:string;email:string;phone:string;streetAddress?:string;addressLine2?:string;city?:string;state?:string;postalCode?:string;country?:string;location?:SavedLocation};
+export type Property = RecoveryMetadata & {id:string;name:string;address:string;city?:string;state?:string;postalCode?:string;emails?:string[];customerId:string;type:string;location?:SavedLocation};
 export type Technician = RecoveryMetadata & {id:string;name:string;specialty:string;email:string;phone:string};
 export type WorkOrder = RecoveryMetadata & {id:string;title:string;type?:string;lineItems?:LineItem[];description:string;propertyId:string;technicianId:string;status:Status;priority:Priority;scheduled:string;created:string};
 export type Activity = {id:string;text:string;at:string;orderId?:string};
-export type Data = {version:1;storageRevision?:number;storageEpoch?:string;catalog?:CatalogItem[];customers:Customer[];properties:Property[];technicians:Technician[];orders:WorkOrder[];activity:Activity[];settings:{company:string;name:string;email:string}};
+export type Data = {version:1;storageRevision?:number;storageEpoch?:string;catalog?:CatalogItem[];customers:Customer[];properties:Property[];technicians:Technician[];orders:WorkOrder[];activity:Activity[];settings:{company:string;name:string;email:string};workOrderWorkflow?:WorkOrderWorkflow;dashboard?:DashboardPreferences;workOrderNumbering?:WorkOrderNumbering;schedulingMap?:SchedulingMapPreferences};
 export const localDate = (date=new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 export function seed():Data {
  const day=(offset:number)=>{const d=new Date();d.setDate(d.getDate()+offset);return localDate(d)};
  const now=new Date().toISOString();
- return {version:1,settings:{company:'ORVEX Facilities',name:'Alex Morgan',email:'alex@orvex.example'},customers:[
+ return {version:1,settings:{company:'ORVEX Facilities',name:'Alex Morgan',email:'alex@orvex.example'},workOrderWorkflow:{defaultStatusId:'open',statuses:[{id:'open',name:'Open',color:'#2f6eb7',terminal:false},{id:'in-progress',name:'In progress',color:'#187457',terminal:false},{id:'completed',name:'Completed',color:'#5e6e82',terminal:true},{id:'closed',name:'Closed',color:'#475569',terminal:true}]},customers:[
  {id:'c1',name:'Meridian Partners',contact:'Sarah Mitchell',email:'sarah@meridian.example',phone:'(312) 555-0142'},
  {id:'c2',name:'Northstar Living',contact:'James Bennett',email:'james@northstar.example',phone:'(312) 555-0188'},
  {id:'c3',name:'Evergreen Health',contact:'Olivia Chen',email:'olivia@evergreen.example',phone:'(773) 555-0124'},

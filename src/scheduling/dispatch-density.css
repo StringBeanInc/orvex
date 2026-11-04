@@ -1,0 +1,55 @@
+.dispatch-cell {
+  padding: 2px;
+}
+
+.dispatch-cell:hover,
+.dispatch-cell:focus-visible {
+  background: linear-gradient(#fff, #fbfdff);
+}
+
+.dispatch-block {
+  border-radius: 3px;
+}
+
+.dispatch-block + .dispatch-block {
+  margin-top: 2px !important;
+}
+
+.dispatch-appointment + .dispatch-appointment {
+  margin-top: 2px !important;
+}
+
+.dispatch-appointment > .calendar-appointment {
+  width: 100%;
+}
+
+.dispatch-block {
+  position: relative;
+  padding-top: 22px;
+}
+
+.dispatch-block::after {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dcecff;
+  color: #2f6eb7;
+  content: 'Open';
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.dispatch-block.in-progress::after {
+  content: 'In progress';
+  background: #d7f4e7;
+  color: #187457;
+}
+
+.dispatch-block.completed::after {
+  content: 'Completed';
+  background: #e3e8ee;
+  color: #5e6e82;
+}
