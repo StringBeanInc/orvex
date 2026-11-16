@@ -30,3 +30,12 @@ ui-debug.log
 /functions/
 /firebase.cloud-emulator.json
 /firebase.production-test.json
+
+# Phase 4B local backups and temporary files
+/backups/
+/orvex-recovery-backup/
+*.phase4b-backup
+*.phase4b-step*-backup
+*.before-step*
+*.before-live-fix
+*.txt

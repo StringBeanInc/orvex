@@ -18,7 +18,7 @@ export type SavedLocation={latitude:number;longitude:number;formattedAddress:str
 export type Customer = RecoveryMetadata & {id:string;name:string;contact:string;email:string;phone:string;streetAddress?:string;addressLine2?:string;city?:string;state?:string;postalCode?:string;country?:string;location?:SavedLocation};
 export type Property = RecoveryMetadata & {id:string;name:string;address:string;city?:string;state?:string;postalCode?:string;emails?:string[];customerId:string;type:string;location?:SavedLocation};
 export type Technician = RecoveryMetadata & {id:string;name:string;specialty:string;email:string;phone:string};
-export type WorkOrder = RecoveryMetadata & {id:string;title:string;type?:string;lineItems?:LineItem[];description:string;propertyId:string;technicianId:string;status:Status;priority:Priority;scheduled:string;created:string};
+export type WorkOrder = RecoveryMetadata & {id:string;title:string;type?:string;lineItems?:LineItem[];lineItemsRevision?:number;description:string;propertyId:string;technicianId:string;status:Status;priority:Priority;scheduled:string;created:string};
 export type Activity = {id:string;text:string;at:string;orderId?:string};
 export type Data = {version:1;storageRevision?:number;storageEpoch?:string;catalog?:CatalogItem[];customers:Customer[];properties:Property[];technicians:Technician[];orders:WorkOrder[];activity:Activity[];settings:{company:string;name:string;email:string};workOrderWorkflow?:WorkOrderWorkflow;dashboard?:DashboardPreferences;workOrderNumbering?:WorkOrderNumbering;schedulingMap?:SchedulingMapPreferences};
 export const localDate = (date=new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -52,3 +52,4 @@ export const storageKey='orvex-v0.1';
 export function readData():{data:Data;error:string;raw:string|null;failed:boolean} {
  let raw:string|null=null;try{raw=localStorage.getItem(storageKey);ensureNoInterruptedRestore();if(raw===null)return {data:seed(),error:'',raw,failed:false};const value=JSON.parse(raw);validateCore(value);return {data:value,error:'',raw,failed:false};}catch{return {data:seed(),error:'Saved data could not be loaded. Sample data is shown read-only. Saving is blocked; original storage is preserved. Use Settings → Backup & Recovery.',raw,failed:true};}
 }
+
