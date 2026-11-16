@@ -1,3 +1,4 @@
+
 import { saveProductionWorkOrderLineItems } from './production-work-order-lines';
 import { saveProductionCatalogItem } from './production-catalog';
 import { useEffect, useState } from 'react';
@@ -107,9 +108,9 @@ export default function ProductionApp({ user }: { user: User }) {
             }
 
             const addedCustomers = next.customers.filter(c => !base.customers.some(b => b.id === c.id));
-            const addedProperties = next.properties.filter(p => !base.properties.some(b => b.id === p.id));
+            const addedProperties = next.properties.filter(p => !base.properties.some(b => b.id));
 
-            const addedOrders = next.orders.filter(o => !base.orders.some(b => b.id === o.id));
+            const addedOrders = next.orders.filter(o => !base.orders.some(b => b.id));
 
             const changedOrders = next.orders.filter(order => {
               const previous = base.orders.find(b => b.id === order.id);
@@ -211,7 +212,8 @@ export default function ProductionApp({ user }: { user: User }) {
           },
           recovery: 'Connected to Firebase Firestore',
           canEdit: import.meta.env.DEV &&
-                   import.meta.env.VITE_FIREBASE_EMULATOR_PROJECT === 'demo-orvex'
+                   import.meta.env.VITE_FIREBASE_EMULATOR_PROJECT === 'demo-orvex',
+          canEditCatalog: true
         });
       },
       handleFailure
@@ -242,10 +244,3 @@ export default function ProductionApp({ user }: { user: User }) {
 
   return <App cloud={cloud} />;
 }
-
-
-
-
-
-
-
